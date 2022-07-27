@@ -1,4 +1,6 @@
-﻿using DuplicateFinderLib;
+﻿using CommandLine;
+using CommandLine.Text;
+using DuplicateFinderLib;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -17,25 +17,29 @@ namespace DuplicateFinderLib
 
         public void StartScan(string path, string searchPattern, int maxDegreeOfParallelism)
         {
-            if(!DirectoryScanned(path))
+            try
             {
-                Logger.Info($"{path} will be scanned");
-                var dirId = CreateDirectoryInDb(path);
-                ScanFiles4Directory(path, searchPattern, dirId, maxDegreeOfParallelism);
-            }
-            else
-            {
-                Logger.Warn($"{path} is already scanned!");
-            }
+                if (!DirectoryScanned(path))
+                {
+                    Logger.Info($"{path} will be scanned");
+                    var dirId = CreateDirectoryInDb(path);
+                    ScanFiles4Directory(path, searchPattern, dirId, maxDegreeOfParallelism);
+                }
+                else
+                {
+                    Logger.Warn($"{path} is already scanned!");
+                }
 
-            var dirs = Directory.GetDirectories(path);
-            foreach (var d in dirs)
-            {
-                StartScan(d, searchPattern, maxDegreeOfParallelism);
-            }                         
+                var dirs = Directory.GetDirectories(path);
+                foreach (var d in dirs)
+                {
+                    StartScan(d, searchPattern, maxDegreeOfParallelism);
+                }
+            }
+            catch (Exception ex) { }
         }
 
-        public void ScanFiles4Directory (string dir, string searchPattern, decimal dirId, int maxDegreeOfParallelism )
+        public void ScanFiles4Directory(string dir, string searchPattern, decimal dirId, int maxDegreeOfParallelism)
         {
             var files = Directory.GetFiles(dir, searchPattern);
             var dfHashList = new ConcurrentBag<DFHash>();
@@ -51,7 +55,6 @@ namespace DuplicateFinderLib
                         FileName = item
                     };
                     dfHashList.Add(entity);
-                    
                 }
             });
             using (var context = new DFDataContext())
@@ -81,7 +84,7 @@ namespace DuplicateFinderLib
             }
         }
 
-        private void UpdateDbPath (decimal id, int fileCount)
+        private void UpdateDbPath(decimal id, int fileCount)
         {
             using (var context = new DFDataContext())
             {
@@ -112,7 +115,7 @@ namespace DuplicateFinderLib
                         context.DFPaths.Remove(entity);
                         context.SaveChanges();
                         return false;
-                    }                   
+                    }
                 }
             }
         }
@@ -149,7 +152,7 @@ namespace DuplicateFinderLib
 
         public void DeleteFiles(int maxDegreeOfParallelism)
         {
-            var toDeleteConcurrent = new ConcurrentBag<string>(GetDuplicatedFiles());           
+            var toDeleteConcurrent = new ConcurrentBag<string>(GetDuplicatedFiles());
             Parallel.ForEach(toDeleteConcurrent, new ParallelOptions { MaxDegreeOfParallelism = maxDegreeOfParallelism }, file =>
             {
                 File.Delete(file);
